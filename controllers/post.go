@@ -1,7 +1,9 @@
-package controllers
+package controller
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 	"samzhangjy/go-blog/models"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +14,21 @@ type CreatePostInput struct {
 	Content string `json:"content" binding:"required"`
 }
 
-func CreatePost(c *gin.Context) {
+func CreatePst(c *gin.Context) {
+
+	var err error
+	if c.GetHeader("Authorization") == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "token not working"})
+		return
+	}
+
+	_, err = Auth(c.GetHeader("Authorization")[7:])
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "token not working2"})
+		return
+	}
+
 	var input CreatePostInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -49,6 +65,18 @@ type UpdatePostInput struct {
 }
 
 func UpdatePost(c *gin.Context) {
+	var err error
+	if c.GetHeader("Authorization") == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "token not working"})
+		return
+	}
+
+	_, err = Auth(c.GetHeader("Authorization")[7:])
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "token not working2"})
+		return
+	}
 	var post models.Post
 	if err := models.DB.Where("id = ?", c.Param("id")).First(&post).Error; err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "record not found"})
@@ -69,6 +97,18 @@ func UpdatePost(c *gin.Context) {
 }
 
 func DeletePost(c *gin.Context) {
+	var err error
+	if c.GetHeader("Authorization") == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "token not working"})
+		return
+	}
+
+	_, err = Auth(c.GetHeader("Authorization")[7:])
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "token not working2"})
+		return
+	}
 	var post models.Post
 	if err := models.DB.Where("id = ?", c.Param("id")).First(&post).Error; err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "record not found"})
@@ -77,4 +117,11 @@ func DeletePost(c *gin.Context) {
 
 	models.DB.Delete(&post)
 	c.JSON(http.StatusOK, gin.H{"data": "success"})
+}
+
+func Env(c *gin.Context) {
+	dsn := fmt.Sprintf("host=%s user=%s dbname=%s port=%s sslmode=disable timezone=Asia/Shanghai", os.Getenv("DB_HOST"), os.Getenv("DB_USER"), os.Getenv("DB"), os.Getenv("DB_PORT"))
+
+	// dsn :=
+	c.JSON(http.StatusOK, gin.H{"data": dsn})
 }
